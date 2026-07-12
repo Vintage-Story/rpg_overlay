@@ -40,7 +40,7 @@ class EntityOverlay
     public static string GetName(string __result, Entity __instance)
     {
         Debug.LogDebug($"GetName called with result: {__instance.WatchedAttributes.GetInt("RPGOverlayEntityLevel")} for {__instance.Code}");
-        if (__instance.WatchedAttributes.HasAttribute("RPGOverlayEntityLevel") && ShouldEnablePlayerLevel)
+        if (__instance.WatchedAttributes.HasAttribute("RPGOverlayEntityLevel"))
             return Lang.Get("rpgoverlay:entity-level", __result, __instance.WatchedAttributes.GetInt("RPGOverlayEntityLevel"));
         else
             return __result;
