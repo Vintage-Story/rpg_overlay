@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Threading.Tasks;
+using OpenConfiguration;
 using Vintagestory.API.Common;
 using Vintagestory.API.Common.Entities;
 using Vintagestory.API.Config;
@@ -7,15 +8,16 @@ using Vintagestory.API.Datastructures;
 using Vintagestory.API.Server;
 namespace RPGOverlay;
 
-public class Initialization : ModSystem
+public class RPGOverlayModSystem : ModSystem
 {
     private readonly Overwrite overwriter = new();
+    internal static ModLogger Logger = ModLogger.None;
 
     public override void Start(ICoreAPI api)
     {
         base.Start(api);
-        Debug.LoadLogger(api.Logger);
-        Debug.Log($"Running on Version: {Mod.Info.Version}");
+        Logger = new ModLogger(api.Logger, "RPGOverlay");
+        Logger.Log($"Running on Version: {Mod.Info.Version}");
 
         overwriter.OverwriteNativeFunctions();
     }
@@ -23,7 +25,7 @@ public class Initialization : ModSystem
     public override void StartServerSide(ICoreServerAPI api)
     {
         base.StartServerSide(api);
-        if (Configuration.enableLevelUPGlobalLevel && api.ModLoader.IsModEnabled("levelup"))
+        if (Configuration.Base.enableLevelUPGlobalLevel && api.ModLoader.IsModEnabled("levelup"))
         {
             // Task is necessary so it will not cry for missing assembly when levelup is not present
             Task.Run(() =>
@@ -63,12 +65,14 @@ public class Initialization : ModSystem
     public override void AssetsLoaded(ICoreAPI api)
     {
         base.AssetsLoaded(api);
-        Configuration.UpdateBaseConfigurations(api);
+        Configuration.Load(api);
+        Logger.ExtendedLoggingEnabled = Configuration.Base.enableExtendedLogs;
+        Logger.Log("Configuration set");
     }
 
     public static void SetInfoTexts(Entity entity)
     {
-        Debug.LogDebug($"Setting Info text for {entity.Code}");
+        Logger.LogDebug($"Setting Info text for {entity.Code}");
         // Adding the health tier
         if (entity.WatchedAttributes.HasAttribute("extraInfoText"))
         {
@@ -80,17 +84,17 @@ public class Initialization : ModSystem
 
     public static int CalculateEntityLevel(Entity entity)
     {
-        Debug.LogDebug($"Calculating entity {entity.Code} level");
+        Logger.LogDebug($"Calculating entity {entity.Code} level");
 
         // Getting level by damage
-        int level = (int)Math.Round(entity.WatchedAttributes.GetFloat("RPGOverlayEntityDamage") / Configuration.levelPerDamage);
+        int level = (int)Math.Round(entity.WatchedAttributes.GetFloat("RPGOverlayEntityDamage") / Configuration.Base.levelPerDamage);
 
-        Debug.LogDebug($"Level by damage {level}");
+        Logger.LogDebug($"Level by damage {level}");
 
         // Getting level by health
-        level += (int)Math.Round(entity.WatchedAttributes.GetFloat("RPGOverlayEntityHealth") / Configuration.levelPerHealth);
+        level += (int)Math.Round(entity.WatchedAttributes.GetFloat("RPGOverlayEntityHealth") / Configuration.Base.levelPerHealth);
 
-        Debug.LogDebug($"Level by health and damage {level}");
+        Logger.LogDebug($"Level by health and damage {level}");
 
         return level;
     }
@@ -104,29 +108,5 @@ public class Initialization : ModSystem
     public override double ExecuteOrder()
     {
         return 1.1;
-    }
-}
-
-public class Debug
-{
-    static private ILogger logger;
-
-    static public void LoadLogger(ILogger _logger) => logger = _logger;
-    static public void Log(string message)
-    {
-        logger?.Log(EnumLogType.Notification, $"[RPGOverlay] {message}");
-    }
-    static public void LogDebug(string message)
-    {
-        if (Configuration.enableExtendedLogs)
-            logger?.Log(EnumLogType.Debug, $"[RPGOverlay] {message}");
-    }
-    static public void LogWarn(string message)
-    {
-        logger?.Log(EnumLogType.Warning, $"[RPGOverlay] {message}");
-    }
-    static public void LogError(string message)
-    {
-        logger?.Log(EnumLogType.Error, $"[RPGOverlay] {message}");
     }
 }

@@ -19,11 +19,11 @@ class Overwrite
         {
             instance = new Harmony("rpgoverlay");
             instance.PatchCategory("rpgoverlay");
-            Debug.Log("Entity Overlay has been overwrited");
+            RPGOverlayModSystem.Logger.Log("Entity Overlay has been overwrited");
         }
         else
         {
-            Debug.Log("RPGOverlay overwriter has already patched, probably by the singleplayer server");
+            RPGOverlayModSystem.Logger.Log("RPGOverlay overwriter has already patched, probably by the singleplayer server");
         }
     }
 }
@@ -39,7 +39,7 @@ class EntityOverlay
     [HarmonyPatch(typeof(Entity), "GetName")]
     public static string GetName(string __result, Entity __instance)
     {
-        Debug.LogDebug($"GetName called with result: {__instance.WatchedAttributes.GetInt("RPGOverlayEntityLevel")} for {__instance.Code}");
+        RPGOverlayModSystem.Logger.LogDebug($"GetName called with result: {__instance.WatchedAttributes.GetInt("RPGOverlayEntityLevel")} for {__instance.Code}");
         if (__instance.WatchedAttributes.HasAttribute("RPGOverlayEntityLevel"))
             return Lang.Get("rpgoverlay:entity-level", __result, __instance.WatchedAttributes.GetInt("RPGOverlayEntityLevel"));
         else
@@ -57,14 +57,14 @@ class EntityOverlay
         FieldInfo protectedDamage = AccessTools.Field(typeof(AiTaskMeleeAttack), "damage");
         float damage = (float)protectedDamage.GetValue(__instance);
 
-        Debug.LogDebug($"Calculating entity datas for {entity.Code}, damage: {damage}, max health: {entity.GetBehavior<EntityBehaviorHealth>()?.BaseMaxHealth}");
+        RPGOverlayModSystem.Logger.LogDebug($"Calculating entity datas for {entity.Code}, damage: {damage}, max health: {entity.GetBehavior<EntityBehaviorHealth>()?.BaseMaxHealth}");
 
         entity.WatchedAttributes.SetFloat("RPGOverlayEntityDamage", damage);
         entity.WatchedAttributes.SetFloat("RPGOverlayEntityHealth", entity.GetBehavior<EntityBehaviorHealth>()?.BaseMaxHealth ?? 0.0f);
-        entity.WatchedAttributes.SetInt("RPGOverlayEntityLevel", Initialization.CalculateEntityLevel(entity));
+        entity.WatchedAttributes.SetInt("RPGOverlayEntityLevel", RPGOverlayModSystem.CalculateEntityLevel(entity));
 
         #region damage-tier
-        int damageTier = (int)Math.Round(damage, Configuration.damageTierPerDamage);
+        int damageTier = (int)Math.Round(damage, Configuration.Base.damageTierPerDamage);
 
         __instance.damageTier = damageTier;
 
@@ -72,11 +72,11 @@ class EntityOverlay
         #endregion
 
         #region health-tier
-        entity.WatchedAttributes.SetInt("RPGOverlayEntityHealthTier", (int)Math.Round(entity.WatchedAttributes.GetFloat("RPGOverlayEntityHealth") / Configuration.healthTierPerHealth));
+        entity.WatchedAttributes.SetInt("RPGOverlayEntityHealthTier", (int)Math.Round(entity.WatchedAttributes.GetFloat("RPGOverlayEntityHealth") / Configuration.Base.healthTierPerHealth));
         #endregion
 
-        Initialization.SetInfoTexts(entity);
+        RPGOverlayModSystem.SetInfoTexts(entity);
 
-        Debug.LogDebug($"Damage: {entity.WatchedAttributes.GetFloat("RPGOverlayEntityDamage")}, DamageTier: {__instance.damageTier} Health: {entity.WatchedAttributes.GetFloat("RPGOverlayEntityHealth")}, Level: {entity.WatchedAttributes.GetInt("RPGOverlayEntityLevel")}");
+        RPGOverlayModSystem.Logger.LogDebug($"Damage: {entity.WatchedAttributes.GetFloat("RPGOverlayEntityDamage")}, DamageTier: {__instance.damageTier} Health: {entity.WatchedAttributes.GetFloat("RPGOverlayEntityHealth")}, Level: {entity.WatchedAttributes.GetInt("RPGOverlayEntityLevel")}");
     }
 }
