@@ -1,7 +1,5 @@
 .vscode
-CakeBuild
 Releases
-RPGOverlay/bin
-RPGOverlay/obj
+*bin
+*obj
 build.ps1
-RPGOverlay.sln

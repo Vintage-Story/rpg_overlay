@@ -16,15 +16,12 @@ public class BaseConfiguration
     public bool enableExtendedLogs = false;
 }
 
-#pragma warning disable CA2211
-public static class Configuration
+public static partial class Configuration
 {
     public static BaseConfiguration Base = new();
 
-    internal static void Load(ICoreAPI api)
-    {
-        Base = ConfigManager.LoadModConfig<BaseConfiguration>(api, "RPGOverlay", "base", RPGOverlayModSystem.Logger, "rpgoverlay:config/base.json");
-    }
+    private static void LoadBase(ICoreAPI api)
+        => Base = ConfigManager.LoadModConfig<BaseConfiguration>(api, "RPGOverlay", "base", RPGOverlayModSystem.Logger, "rpgoverlay:config/base.json");
 
     public static int GlobalGetLevelByEXP(ulong exp)
     {
