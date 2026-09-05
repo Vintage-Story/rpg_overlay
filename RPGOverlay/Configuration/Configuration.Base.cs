@@ -21,7 +21,7 @@ public static partial class Configuration
     public static BaseConfiguration Base = new();
 
     private static void LoadBase(ICoreAPI api)
-        => Base = ConfigManager.LoadModConfig<BaseConfiguration>(api, "RPGOverlay", "base", RPGOverlayModSystem.Logger, "rpgoverlay:config/base.json");
+        => Base = ConfigManager.LoadModConfig<BaseConfiguration>(api, "RPGOverlay", "base", RPGOverlayModSystem.Logger);
 
     public static int GlobalGetLevelByEXP(ulong exp)
     {
