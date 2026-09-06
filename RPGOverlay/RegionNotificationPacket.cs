@@ -6,5 +6,14 @@ namespace RPGOverlay;
 public class RegionNotificationPacket
 {
     [ProtoMember(1)]
-    public string Text;
+    public string SurfaceType;
+
+    [ProtoMember(2)]
+    public int RegionX;
+
+    [ProtoMember(3)]
+    public int RegionZ;
+
+    [ProtoMember(4)]
+    public int Level;
 }

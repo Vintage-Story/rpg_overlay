@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using Vintagestory.API.Client;
 using Vintagestory.API.Config;
 using Vintagestory.API.MathTools;
@@ -11,7 +10,7 @@ public class HudRegionNotification : HudElement
     private readonly Vec4f fadeCol = new(1f, 1f, 1f, 1f);
     private long textActiveMs;
     private const int DurationVisibleMs = 5000;
-    private readonly Queue<string> messageQueue = new();
+    private string _pendingMessage;
 
     public override string ToggleKeyCombinationCode => null;
     public override bool Focusable => false;
@@ -68,17 +67,18 @@ public class HudRegionNotification : HudElement
     public void Show(string text)
     {
         RPGOverlayModSystem.Logger.Log($"[RegionHUD] Show called: '{text}', textElem null={textElem == null}");
-        messageQueue.Enqueue(text);
+        _pendingMessage = text;
     }
 
     private void OnTick(float _)
     {
         if (textElem == null) return;
-        if (textActiveMs == 0L && messageQueue.Count == 0) return;
+        if (textActiveMs == 0L && _pendingMessage == null) return;
 
         if (textActiveMs == 0L)
         {
-            string msg = messageQueue.Dequeue();
+            string msg = _pendingMessage;
+            _pendingMessage = null;
             RPGOverlayModSystem.Logger.Log($"[RegionHUD] Displaying: '{msg}'");
             textActiveMs = capi.InWorldEllapsedMilliseconds;
             fadeCol.A = 0f;

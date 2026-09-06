@@ -35,10 +35,29 @@ public class RPGOverlayModSystem : ModSystem
             .RegisterMessageType<RegionNotificationPacket>()
             .SetMessageHandler<RegionNotificationPacket>(packet =>
             {
-                Logger.Log($"[RegionHUD] Packet received on client: '{packet.Text}'");
-                _regionHud.Show(packet.Text);
+                string name = ResolveRegionName(api, packet);
+                string display = Lang.Get("rpgoverlay:region-title", name, packet.Level);
+                Logger.Log($"[RegionHUD] Packet received on client: surface={packet.SurfaceType} name='{name}' level={packet.Level}");
+                _regionHud.Show(display);
             });
         Logger.Log("[RegionHUD] Client channel registered");
+    }
+
+    private static string ResolveRegionName(ICoreClientAPI api, RegionNotificationPacket packet)
+    {
+        var names = new System.Collections.Generic.List<string>();
+        for (int i = 0; ; i++)
+        {
+            string key = $"rpgoverlay:region-surface-{packet.SurfaceType}-{i}";
+            string val = Lang.Get(key);
+            if (val == key) break;
+            names.Add(val);
+        }
+
+        if (names.Count == 0) return packet.SurfaceType;
+
+        int seed = (int)(api.World.Seed ^ ((long)packet.RegionX * 1234567L) ^ ((long)packet.RegionZ * 7654321L));
+        return names[Math.Abs(seed) % names.Count];
     }
 
     public override void StartServerSide(ICoreServerAPI api)
@@ -76,10 +95,13 @@ public class RPGOverlayModSystem : ModSystem
                 Logger.Log("[RegionHUD] Subscribing to RegionAPI.OnPlayerEnterRegion");
                 RPGDifficulty.RegionAPI.OnPlayerEnterRegion += (player, oldRegion, newRegion) =>
                 {
-                    Logger.Log($"[RegionHUD] Region changed for {player.PlayerName}: ({newRegion.RegionX},{newRegion.RegionZ}) Level {newRegion.Level}");
+                    Logger.Log($"[RegionHUD] Region changed for {player.PlayerName}: ({newRegion.RegionX},{newRegion.RegionZ}) surface={newRegion.SurfaceType} Level {newRegion.Level}");
                     _serverChannel.SendPacket(new RegionNotificationPacket
                     {
-                        Text = $"Region ({newRegion.RegionX},{newRegion.RegionZ}) Level {newRegion.Level}"
+                        SurfaceType = newRegion.SurfaceType,
+                        RegionX = newRegion.RegionX,
+                        RegionZ = newRegion.RegionZ,
+                        Level = newRegion.Level
                     }, player);
                 };
                 Logger.Log("[RegionHUD] Subscribed to OnPlayerEnterRegion");
