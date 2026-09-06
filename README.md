@@ -5,6 +5,10 @@ If [LevelUP](https://mods.vintagestory.at/levelup) is enabled the mod will also 
 
 If [RPG Difficulty](https://mods.vintagestory.at/rpgdifficulty) is enabled and the region system is enabled the region name and level will be displayed once you across the region
 
+
+## Dependencies
+- [Open Configuration](https://mods.vintagestory.at/openconfiguration)
+
 # About RPG Overlay
 RPG Overlay is open source project and can easily be accessed on the github, all contents from this mod is completly free.
 
