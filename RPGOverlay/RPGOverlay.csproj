@@ -21,6 +21,14 @@
     </Reference>
   </ItemGroup>
 
+  <!-- Optional: RPGDifficulty integration (region events) -->
+  <ItemGroup>
+    <Reference Include="RPGDifficulty">
+      <HintPath>$(VINTAGE_STORY)/ClientData/Mods/rpgdifficulty/RPGDifficulty.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+
   <!-- DELETE THIS IF YOU DON'T PLAN TO USE LEVELUP -->
   <!-- Also delete the files for levelup compatibility -->
   <ItemGroup>

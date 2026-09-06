@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Threading.Tasks;
 using OpenConfiguration;
+using Vintagestory.API.Client;
 using Vintagestory.API.Common;
 using Vintagestory.API.Common.Entities;
 using Vintagestory.API.Config;
@@ -13,6 +14,9 @@ public class RPGOverlayModSystem : ModSystem
     private readonly Overwrite overwriter = new();
     internal static ModLogger Logger = ModLogger.None;
 
+    private IServerNetworkChannel _serverChannel;
+    private HudRegionNotification _regionHud;
+
     public override void Start(ICoreAPI api)
     {
         base.Start(api);
@@ -22,9 +26,30 @@ public class RPGOverlayModSystem : ModSystem
         overwriter.OverwriteNativeFunctions();
     }
 
+    public override void StartClientSide(ICoreClientAPI api)
+    {
+        base.StartClientSide(api);
+        Logger.Log("[RegionHUD] StartClientSide called");
+        _regionHud = new HudRegionNotification(api);
+        api.Network.RegisterChannel("rpgoverlay-region")
+            .RegisterMessageType<RegionNotificationPacket>()
+            .SetMessageHandler<RegionNotificationPacket>(packet =>
+            {
+                Logger.Log($"[RegionHUD] Packet received on client: '{packet.Text}'");
+                _regionHud.Show(packet.Text);
+            });
+        Logger.Log("[RegionHUD] Client channel registered");
+    }
+
     public override void StartServerSide(ICoreServerAPI api)
     {
         base.StartServerSide(api);
+
+        Logger.Log("[RegionHUD] StartServerSide called");
+        _serverChannel = api.Network.RegisterChannel("rpgoverlay-region")
+            .RegisterMessageType<RegionNotificationPacket>();
+        Logger.Log("[RegionHUD] Server channel registered");
+
         if (Configuration.Base.enableLevelUPGlobalLevel && api.ModLoader.IsModEnabled("levelup"))
         {
             // Task is necessary so it will not cry for missing assembly when levelup is not present
@@ -38,6 +63,26 @@ public class RPGOverlayModSystem : ModSystem
                 LevelUP.Configuration.RegisterNewEXPLevelType("Global", Configuration.GlobalGetExpByLevel);
                 LevelUP.Configuration.RegisterNewMaxLevelByLevelTypeEXP("Global", 999);
                 LevelUP.Server.ExperienceEvents.OnExperienceIncrease += LevelUPOnPlayerExperienceIncrease;
+            });
+        }
+
+        bool hasDifficulty = api.ModLoader.IsModEnabled("rpgdifficulty");
+        Logger.Log($"[RegionHUD] rpgdifficulty installed: {hasDifficulty}");
+        if (hasDifficulty)
+        {
+            // Task is necessary so it will not cry for missing assembly when rpgdifficulty is not present
+            Task.Run(() =>
+            {
+                Logger.Log("[RegionHUD] Subscribing to RegionAPI.OnPlayerEnterRegion");
+                RPGDifficulty.RegionAPI.OnPlayerEnterRegion += (player, oldRegion, newRegion) =>
+                {
+                    Logger.Log($"[RegionHUD] Region changed for {player.PlayerName}: ({newRegion.RegionX},{newRegion.RegionZ}) Level {newRegion.Level}");
+                    _serverChannel.SendPacket(new RegionNotificationPacket
+                    {
+                        Text = $"Region ({newRegion.RegionX},{newRegion.RegionZ}) Level {newRegion.Level}"
+                    }, player);
+                };
+                Logger.Log("[RegionHUD] Subscribed to OnPlayerEnterRegion");
             });
         }
     }
