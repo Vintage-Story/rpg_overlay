@@ -6,7 +6,7 @@ namespace RPGOverlay;
 public class RegionNotificationPacket
 {
     [ProtoMember(1)]
-    public string SurfaceType;
+    public string Zone;
 
     [ProtoMember(2)]
     public int RegionX;

@@ -37,7 +37,7 @@ public class RPGOverlayModSystem : ModSystem
             {
                 string name = ResolveRegionName(api, packet);
                 string display = Lang.Get("rpgoverlay:region-title", name, packet.Level);
-                Logger.Log($"[RegionHUD] Packet received on client: surface={packet.SurfaceType} name='{name}' level={packet.Level}");
+                Logger.LogDebug($"[RegionHUD] Packet received on client: zone={packet.Zone} name='{name}' level={packet.Level}");
                 _regionHud.Show(display);
             });
         Logger.Log("[RegionHUD] Client channel registered");
@@ -45,16 +45,25 @@ public class RPGOverlayModSystem : ModSystem
 
     private static string ResolveRegionName(ICoreClientAPI api, RegionNotificationPacket packet)
     {
+        // For "sand-claystone", "gravel-granite" etc., try specific key first then base zone key.
+        string zone = packet.Zone ?? "";
+        int dash = zone.IndexOf('-');
+        string baseZone = dash >= 0 ? zone[..dash] : zone;
+
         var names = new System.Collections.Generic.List<string>();
-        for (int i = 0; ; i++)
+        foreach (string candidate in new[] { zone, baseZone })
         {
-            string key = $"rpgoverlay:region-surface-{packet.SurfaceType}-{i}";
-            string val = Lang.Get(key);
-            if (val == key) break;
-            names.Add(val);
+            for (int i = 0; ; i++)
+            {
+                string key = $"rpgoverlay:region-zone-{candidate}-{i}";
+                string val = Lang.Get(key);
+                if (val == key) break;
+                names.Add(val);
+            }
+            if (names.Count > 0) break;
         }
 
-        if (names.Count == 0) return packet.SurfaceType;
+        if (names.Count == 0) return zone;
 
         int seed = (int)(api.World.Seed ^ ((long)packet.RegionX * 1234567L) ^ ((long)packet.RegionZ * 7654321L));
         return names[Math.Abs(seed) % names.Count];
@@ -95,10 +104,10 @@ public class RPGOverlayModSystem : ModSystem
                 Logger.Log("[RegionHUD] Subscribing to RegionAPI.OnPlayerEnterRegion");
                 RPGDifficulty.RegionAPI.OnPlayerEnterRegion += (player, oldRegion, newRegion) =>
                 {
-                    Logger.Log($"[RegionHUD] Region changed for {player.PlayerName}: ({newRegion.RegionX},{newRegion.RegionZ}) surface={newRegion.SurfaceType} Level {newRegion.Level}");
+                    Logger.Log($"[RegionHUD] Region changed for {player.PlayerName}: ({newRegion.RegionX},{newRegion.RegionZ}) zone={newRegion.Zone} Level {newRegion.Level}");
                     _serverChannel.SendPacket(new RegionNotificationPacket
                     {
-                        SurfaceType = newRegion.SurfaceType,
+                        Zone = newRegion.Zone,
                         RegionX = newRegion.RegionX,
                         RegionZ = newRegion.RegionZ,
                         Level = newRegion.Level
